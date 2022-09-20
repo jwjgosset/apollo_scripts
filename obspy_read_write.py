@@ -1,4 +1,4 @@
-# import obspy
+import obspy
 import datetime
 import argparse
 from pathlib import Path
