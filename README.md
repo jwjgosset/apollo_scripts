@@ -6,6 +6,7 @@ The API returns a json file with 2 second intervals, showing the number of packe
 
 **Usage**
 
+```
 usage: apollo_daily_latency.py [-h] [-t DATE] [-d BASE_DIR]
                                [-a APOLLO_ADDRESS] [-b BINDER]
 
@@ -19,3 +20,4 @@ optional arguments:
                         The address where the apolloserver can be reached
   -b BINDER, --binder BINDER
                         Location of binder file.
+```
