@@ -124,7 +124,7 @@ def main():
     argsparse.add_argument(
         '-t',
         '--date',
-        help='The date to run for',
+        help="The date to run for. Default is yesterday's",
         default=None
     )
     argsparse.add_argument(
@@ -136,8 +136,7 @@ def main():
     argsparse.add_argument(
         '-a',
         '--apollo-address',
-        help=('The address, including port number, where the apolloserver can',
-              'be reached'),
+        help='The address where the apolloserver can be reached',
         default='localhost:8787'
     )
     argsparse.add_argument(
