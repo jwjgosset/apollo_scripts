@@ -125,7 +125,7 @@ def getStationList(
         if entry not in station_list:
             station_list.append(entry)
 
-        logging.debug(f"List of stations in binder: {station_list}")
+    logging.debug(f"List of stations in binder: {station_list}")
 
     return station_list
 
