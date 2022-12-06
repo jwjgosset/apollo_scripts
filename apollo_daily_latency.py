@@ -5,8 +5,10 @@ devices and store them in the long-term archive
 '''
 
 
+import logging
 import csv
 import datetime
+from typing import List
 from urllib.error import HTTPError
 import requests
 from pathlib import Path
@@ -63,7 +65,9 @@ def getUrl(
                 f'T00:00:00.000Z&endTime={working_date.strftime("%Y-%m-%d")}' +
                 'T23:59:59.999Z&timeFormat=iso8601&intervals=43200&' +
                 'arrivalMetrics')
-    return "http://" + address + '/' + api + channels + relative
+    full_url = f"http://{address}/{api}{channels}{relative}"
+    logging.debug(f"Query url: {full_url}")
+    return full_url
 
 
 def createDirectory(
@@ -86,14 +90,16 @@ def createDirectory(
     date_dir = Path(dir_str)
 
     # Exists_ok so it just passes if it already exists
-    Path.mkdir(date_dir, mode=0o755, exist_ok=True, parents=True)
+    if not date_dir.exists():
+        logging.debug(f"Creating directory {date_dir}")
+        Path.mkdir(date_dir, mode=0o755, exist_ok=True, parents=True)
 
     return dir_str
 
 
 def getStationList(
     binder_file: str
-) -> list:
+) -> List[tuple]:
     '''
     Reads the binder file to get a list of stations to query Apolloserver about
 
@@ -104,17 +110,22 @@ def getStationList(
 
     Returns
     -------
-    List: List of stations
+    List: List of tuples containing network code and station code
     '''
-    station_list: list = []
+    station_list: List[tuple] = []
     file = open(binder_file, 'r')
 
     rows = csv.DictReader(file)
 
     for row in rows:
         station = row[' STATION_CODE']
-        if station not in station_list:
-            station_list.append(station)
+        network = row['#NETWORK_CODE']
+
+        entry = tuple([network, station])
+        if entry not in station_list:
+            station_list.append(entry)
+
+        logging.debug(f"List of stations in binder: {station_list}")
 
     return station_list
 
@@ -145,8 +156,20 @@ def main():
         help='Location of binder file.',
         default='/home/apollo/binder.csv'
     )
+    argsparse.add_argument(
+        '-v',
+        '--verbose',
+        action='store_true',
+        help='Sets the logging level to verbose'
+    )
 
     args = argsparse.parse_args()
+
+    # Set logging parameters
+    logging.basicConfig(
+        format='%(asctime)s:%(levelname)s:%(message)s',
+        datefmt="%Y-%m-%d %H:%M:%S",
+        level=logging.DEBUG if args.verbose else logging.INFO)
 
     # Get a date to work with
     working_date = getDate(args.date)
@@ -166,24 +189,31 @@ def main():
     # Ensure the directory exists to write in
     full_dir = createDirectory(baseDir, working_date)
 
-    for station in stations:
+    for entry in stations:
         try:
             # Request availability information for the station from the
             # apolloserver
-            soh = requests.get(getUrl(address, station, working_date))
+            network = entry[0]
+            station = entry[1]
+            soh = requests.get(getUrl(
+                address=address,
+                network=network,
+                station=station,
+                working_date=working_date))
             soh.raise_for_status()
             data = soh.json()
 
-        except HTTPError:
-            print(f"Could not fetch data for {station} from server")
-        except ValueError:
-            print(f"Invalid JSON for {station} fetched from server.")
+            # Write availability information to file
+            output_file = (f'{full_dir}/{network}.{station}.{working_date.year}.' +
+                           f'{jday}.json')
+            with open(output_file, 'w') as f:
+                json.dump(data, f, indent=2)
+            f.close()
 
-        # Write availability information to file
-        with open(f'{full_dir}/QW.{station}.{working_date.year}.{jday}.json',
-                  'w+') as f:
-            json.dump(data, f, indent=2)
-        f.close()
+        except HTTPError:
+            logging.error(f"Could not fetch data for {station} from server")
+        except ValueError:
+            logging.error(f"Invalid JSON for {station} fetched from server.")
 
 
 if __name__ == '__main__':
