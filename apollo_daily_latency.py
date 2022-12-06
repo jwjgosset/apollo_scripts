@@ -65,7 +65,9 @@ def getUrl(
                 f'T00:00:00.000Z&endTime={working_date.strftime("%Y-%m-%d")}' +
                 'T23:59:59.999Z&timeFormat=iso8601&intervals=43200&' +
                 'arrivalMetrics')
-    return "http://" + address + '/' + api + channels + relative
+    full_url = f"http://{address}/{api}{channels}{relative}"
+    logging.debug(f"Query url: {full_url}")
+    return full_url
 
 
 def createDirectory(
@@ -88,7 +90,9 @@ def createDirectory(
     date_dir = Path(dir_str)
 
     # Exists_ok so it just passes if it already exists
-    Path.mkdir(date_dir, mode=0o755, exist_ok=True, parents=True)
+    if not date_dir.exists():
+        logging.debug(f"Creating directory {date_dir}")
+        Path.mkdir(date_dir, mode=0o755, exist_ok=True, parents=True)
 
     return dir_str
 
@@ -120,6 +124,8 @@ def getStationList(
         entry = tuple([network, station])
         if entry not in station_list:
             station_list.append(entry)
+
+        logging.debug(f"List of stations in binder: {station_list}")
 
     return station_list
 
@@ -198,15 +204,16 @@ def main():
             data = soh.json()
 
             # Write availability information to file
-            with open(f'{full_dir}/{network}.{station}.{working_date.year}.{jday}.json',
-                      'w+') as f:
+            output_file = (f'{full_dir}/{network}.{station}.{working_date.year}.' +
+                           f'{jday}.json')
+            with open(output_file, 'w') as f:
                 json.dump(data, f, indent=2)
             f.close()
 
         except HTTPError:
-            print(f"Could not fetch data for {station} from server")
+            logging.error(f"Could not fetch data for {station} from server")
         except ValueError:
-            print(f"Invalid JSON for {station} fetched from server.")
+            logging.error(f"Invalid JSON for {station} fetched from server.")
 
 
 if __name__ == '__main__':
