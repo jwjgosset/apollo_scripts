@@ -203,12 +203,15 @@ def main():
             soh.raise_for_status()
             data = soh.json()
 
-            # Write availability information to file
-            output_file = (f'{full_dir}/{network}.{station}.' +
-                           f'{working_date.year}.{jday}.json')
-            with open(output_file, 'w') as f:
-                json.dump(data, f, indent=2)
-            f.close()
+            if len(data["availability"]) > 0:
+                # Write availability information to file
+                output_file = (f'{full_dir}/{network}.{station}.' +
+                            f'{working_date.year}.{jday}.json')
+                with open(output_file, 'w') as f:
+                    json.dump(data, f, indent=2)
+                f.close()
+            else:
+                logging.debug(f'No latency data for {network}.{station}')
 
         except HTTPError:
             logging.error(f"Could not fetch data for {station} from server")
