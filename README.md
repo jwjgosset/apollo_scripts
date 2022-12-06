@@ -20,4 +20,5 @@ optional arguments:
                         The address where the apolloserver can be reached
   -b BINDER, --binder BINDER
                         Location of binder file.
+  -v, --verbose         Sets the logging level to debug
 ```
