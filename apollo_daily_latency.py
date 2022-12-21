@@ -206,7 +206,8 @@ def main():
             if len(data["availability"]) > 0:
                 # Write availability information to file
                 output_file = (f'{full_dir}/{network}.{station}.' +
-                            f'{working_date.year}.{jday}.json')
+                               f'{working_date.year}.{jday}.json')
+                logging.debug(f"Writing {output_file}")
                 with open(output_file, 'w') as f:
                     json.dump(data, f, indent=2)
                 f.close()
